@@ -1,3 +1,5 @@
+require './discount'
+
 OrderItem = Struct.new(:item_id, :name, :price)
 Discount = Struct.new(:items, :savings)
 
@@ -32,7 +34,7 @@ deals = [
         .map do |deal|
           Discount[
             deal.map(&:item_id),
-            deal.map(&:price).reduce(&:+) * 0.2]
+            (deal.map(&:price).reduce(&:+) * 0.2).to_i]
         end
   end,
 
@@ -40,7 +42,8 @@ deals = [
   Deal.new do |order|
     order
       .select { |oi| /Drink/ =~ oi.name }
-      .combination(2) do |drinks|
+      .combination(2)
+      .map do |drinks|
         Discount[
           drinks.map(&:item_id),
           drinks.map(&:price).min]
@@ -53,4 +56,4 @@ order = [
   OrderItem[3, "Drink 1", 300],
   OrderItem[4, "Drink 2", 400]]
 
-p deals.first.apply(order)
+p calculate_discount(deals, order)
