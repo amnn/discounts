@@ -28,6 +28,18 @@ class SparseMatrix
     def self.entry(up, down, left, right, row, col)
       new(nil, up, down, left, right, row, col)
     end
+
+    def remove
+      left.right = right
+      right.left = left
+      up.down = down
+      down.up = up
+    end
+
+    def insert
+      left.right = right.left =
+        up.down = down.up = self
+    end
   end
 
   def initialize(rows, cols, &assoc)
