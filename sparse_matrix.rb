@@ -59,6 +59,20 @@ class SparseMatrix
     end
   end
 
+  def inspect
+    @rows.map do |sentinel|
+      row_reps = []
+      r = sentinel
+      loop do
+        r = r.right
+        break if r == sentinel
+        row_reps << r.col.datum
+      end
+
+      "#{sentinel.datum}: " << row_reps.join(", ")
+    end.join("\n")
+  end
+
   private
   def build_line(data, head, &mk_node)
     data.reduce([head]) do |nodes, datum|

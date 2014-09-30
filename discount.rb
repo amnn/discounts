@@ -1,6 +1,12 @@
-def calculate_discount(deals, order)
-  discounts =
-    deals.flat_map { |d| d.apply(order) }
+require './sparse_matrix'
 
-  discounts
+def calculate_discount(deals, order)
+  matrix =
+    SparseMatrix.new(
+      deals.flat_map { |d| d.apply(order) },
+      order) do |discount, item|
+        discount.items.include? item.item_id
+      end
+
+  matrix
 end

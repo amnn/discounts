@@ -1,7 +1,17 @@
+require 'set'
 require './discount'
 
-OrderItem = Struct.new(:item_id, :name, :price)
-Discount = Struct.new(:items, :savings)
+class OrderItem < Struct.new(:item_id, :name, :price)
+  def to_s
+    "Item[#{item_id}](#{name}, #{price})"
+  end
+end
+
+class Discount < Struct.new(:items, :savings)
+  def to_s
+    "Discount(#{savings})"
+  end
+end
 
 class Deal
   @next_id = 0
@@ -33,7 +43,7 @@ deals = [
         .product(drink_items)
         .map do |deal|
           Discount[
-            deal.map(&:item_id),
+            Set[*deal.map(&:item_id)],
             (deal.map(&:price).reduce(&:+) * 0.2).to_i]
         end
   end,
@@ -45,7 +55,7 @@ deals = [
       .combination(2)
       .map do |drinks|
         Discount[
-          drinks.map(&:item_id),
+          Set[*drinks.map(&:item_id)],
           drinks.map(&:price).min]
       end
   end]
