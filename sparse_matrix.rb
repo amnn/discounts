@@ -50,10 +50,9 @@ class SparseMatrix
     @rows.each do |row|
       @cols.each do |col|
         if assoc[row.datum, col.datum]
-          up = col.up; left = row.left
-          node = Node.entry(up, col, left, row, row, col)
-          col.up = row.left =
-            up.down = left.right = node
+          Node
+            .entry(col.up, col, row.left, row, row, col)
+            .insert
         end
       end
     end
