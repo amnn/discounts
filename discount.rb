@@ -11,4 +11,9 @@ end
 def calculate_discount(deals, order)
   deal_matrix(deals, order)
     .covering_rows
+    .max_by do |discounts|
+      discounts.reduce(0) do |acc, d|
+        acc + d.savings
+      end
+    end
 end
