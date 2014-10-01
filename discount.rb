@@ -9,5 +9,6 @@ def deal_matrix(deals, order)
 end
 
 def calculate_discount(deals, order)
-  matrix = deal_matrix(deals, order)
+  deal_matrix(deals, order)
+    .covering_rows
 end

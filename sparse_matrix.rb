@@ -32,24 +32,49 @@ class SparseMatrix
       row.col
     end
 
-    def remove
-      left.right = right
-      right.left = left
+    def remove!
       up.down = down
       down.up = up
       self
     end
 
-    def insert
+    def insert!
       left.right = right.left =
         up.down = down.up = self
+    end
+
+    def inserted?
+      up.down.equal?(self) &&
+        down.up.equal?(self) &&
+        left.right.equal?(self) &&
+        right.left.equal?(self)
+    end
+
+    def removed?
+      !inserted?
+    end
+
+    def last_row?
+      down.equal? col
+    end
+
+    def last_col?
+      right.equal? row
+    end
+
+    def sentinel_row?
+      equal? col
+    end
+
+    def sentinel_col?
+      equal? row
     end
 
     def rows # yields #
       r = self
       loop do
         r = r.down
-        break if r.equal? col
+        break if r.sentinel_row?
         yield r
       end
     end
@@ -58,7 +83,7 @@ class SparseMatrix
       c = self
       loop do
         c = c.right
-        break if c.equal? row
+        break if c.sentinel_col?
         yield c
       end
     end
@@ -66,15 +91,15 @@ class SparseMatrix
 
   def initialize(rs, cs, &assoc)
     @head = Node.header
-    @rows = build_line(rs, @head, &Node.method(:empty_row))
-    @cols = build_line(cs, @head, &Node.method(:empty_col))
+    @rows = build_axis(rs, @head, &Node.method(:empty_row))
+    @cols = build_axis(cs, @head, &Node.method(:empty_col))
 
     @rows.each do |row|
       @cols.each do |col|
         if assoc[row.datum, col.datum]
           Node
             .entry(col.up, col, row.left, row, row, col)
-            .insert
+            .insert!
         end
       end
     end
@@ -87,6 +112,32 @@ class SparseMatrix
     from.rows(&blk)
   end
 
+  def covering_rows(from = @head)
+    return [[]] if from.last_row?
+
+    enum_for(:rows, from).flat_map do |row|
+      removals = []
+
+      row.cols do |cell_x|
+        cell_x.col.rows do |cell_y|
+          r = cell_y.row
+          unless r.removed? || r.equal?(row)
+            removals.unshift r.remove!
+          end
+        end
+      end
+
+      removals.unshift row.remove!
+
+      coverings =
+        covering_rows(row)
+          .map { |rs| rs << row.datum }
+
+      removals.each(&:insert!)
+      coverings
+    end
+  end
+
   def inspect
     @head.enum_for(:rows).map do |r|
       "#{r.datum}: " <<
@@ -97,9 +148,9 @@ class SparseMatrix
   end
 
   private
-  def build_line(data, head, &mk_node)
+  def build_axis(data, head, &mk_node)
     data.reduce([head]) do |nodes, datum|
       nodes << mk_node[datum, nodes.last, head]
-    end.tap { |line| line.shift }
+    end.tap(&:shift)
   end
 end

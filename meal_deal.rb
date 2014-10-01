@@ -9,7 +9,7 @@ end
 
 class Discount < Struct.new(:items, :savings)
   def to_s
-    "Discount(#{savings})"
+    "Discount(#{savings}) #{items.inspect}"
   end
 end
 
