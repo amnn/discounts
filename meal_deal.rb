@@ -7,9 +7,9 @@ class OrderItem < Struct.new(:item_id, :name, :price)
   end
 end
 
-class Discount < Struct.new(:items, :savings)
+class Discount < Struct.new(:name, :items, :savings)
   def to_s
-    "Discount(#{savings}) #{items.inspect}"
+    "Discount[#{name}](#{savings}) #{items.inspect}"
   end
 end
 
@@ -19,20 +19,20 @@ class Deal
     @next_id += 1
   end
 
-  attr_reader :id
-  def initialize(&blk)
+  attr_reader :id, :name
+  def initialize(name, &blk)
     @id = Deal.next_id
+    @name = name
     @blk = blk
   end
 
   def apply(order)
-    @blk.call(order)
+    @blk[name, order]
   end
 end
 
 deals = [
-  # 20% Off Food + Drink Combinations
-  Deal.new do |order|
+  Deal.new("20% off Food + Drink Combinations") do |name, order|
     food_items, drink_items =
       %W(Food Drink).map do  |i|
         r = /#{i}/
@@ -43,19 +43,18 @@ deals = [
         .product(drink_items)
         .map do |deal|
           Discount[
-            Set[*deal.map(&:item_id)],
+            name, Set[*deal.map(&:item_id)],
             (deal.map(&:price).reduce(&:+) * 0.2).to_i]
         end
   end,
 
-  # 2 for 1 drinks.
-  Deal.new do |order|
+  Deal.new("2 for 1 drinks") do |name, order|
     order
       .select { |oi| /Drink/ =~ oi.name }
       .combination(2)
       .map do |drinks|
         Discount[
-          Set[*drinks.map(&:item_id)],
+          name, Set[*drinks.map(&:item_id)],
           drinks.map(&:price).min]
       end
   end]
