@@ -7,8 +7,7 @@ class SparseMatrix
       head = new
       head.left = head.right =
         head.up = head.down =
-        head.row = head.col
-      head
+        head.row = head.col = head
     end
 
     def self.empty_row(datum, up, head)
