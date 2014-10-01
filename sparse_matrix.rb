@@ -28,23 +28,46 @@ class SparseMatrix
       new(nil, up, down, left, right, row, col)
     end
 
+    def head
+      row.col
+    end
+
     def remove
       left.right = right
       right.left = left
       up.down = down
       down.up = up
+      self
     end
 
     def insert
       left.right = right.left =
         up.down = down.up = self
     end
+
+    def rows # yields #
+      r = self
+      loop do
+        r = r.down
+        break if r.equal? col
+        yield r
+      end
+    end
+
+    def cols # yields #
+      c = self
+      loop do
+        c = c.right
+        break if c.equal? row
+        yield c
+      end
+    end
   end
 
-  def initialize(rows, cols, &assoc)
+  def initialize(rs, cs, &assoc)
     @head = Node.header
-    @rows = build_line(rows, @head, &Node.method(:empty_row))
-    @cols = build_line(cols, @head, &Node.method(:empty_col))
+    @rows = build_line(rs, @head, &Node.method(:empty_row))
+    @cols = build_line(cs, @head, &Node.method(:empty_col))
 
     @rows.each do |row|
       @cols.each do |col|
@@ -57,17 +80,19 @@ class SparseMatrix
     end
   end
 
-  def inspect
-    @rows.map do |sentinel|
-      row_reps = []
-      r = sentinel
-      loop do
-        r = r.right
-        break if r == sentinel
-        row_reps << r.col.datum
-      end
+  def rows(from = @head, &blk)
+    unless from.head.equal? @head
+      raise ArgumentError, "Row does not match matrix"
+    end
+    from.rows(&blk)
+  end
 
-      "#{sentinel.datum}: " << row_reps.join(", ")
+  def inspect
+    @head.enum_for(:rows).map do |r|
+      "#{r.datum}: " <<
+        r.enum_for(:cols).map do |c|
+          c.col.datum
+        end.join(", ")
     end.join("\n")
   end
 
