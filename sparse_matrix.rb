@@ -41,6 +41,17 @@ class SparseMatrix
 
   means that column node 3 wraps back round and connects to the header node.
 
+  Relationships with arrow heads denote one-way relationships. E.g.
+
+    x <- y -> Z
+
+  Means:
+
+    y.left = x
+    y.right = z
+
+  But it provides no information about `x.right` or `z.left`.
+
   Finally, `*` represents an internal node of the matrix (representing a `1`)
   in the matrix. The `+` signs denote relationships crossing over each other
   in the diagram (they are a feature of the diagram only, and not the actual
@@ -113,9 +124,9 @@ class SparseMatrix
     # row and column:
     #
     #           up
-    #           |
-    #   left -- * -- right
-    #           |
+    #           ^
+    #   left <- * -> right
+    #           v
     #           down
     #
     # Because entry nodes simply represent one, they do not use their
@@ -134,17 +145,16 @@ class SparseMatrix
       row.col
     end
 
-    # Removes this node from its vertical relationship. I.e. if originally,
-    # we have the following:
+    # Removes this node from its vertical relationship. I.e. it does the
+    # following:
     #
-    #   up
-    #   |
-    #   *
-    #   |
-    #   down
+    #   up             +> up
+    #   |              |  |
+    #   *     BECOMES  *  |
+    #   |              |  |
+    #   down           +> down
     #
-    # Then, we change `up` to point to `down` and `down` to point to `up`. So
-    # that if we look at the structure from the point of view of `up` or `down`
+    # So if we look at the structure from the point of view of `up` or `down`
     # it looks like this:
     #
     #   up
@@ -154,7 +164,7 @@ class SparseMatrix
     # But from the point of view of `*`, it is still as it was before.
     #
     # This allows us to recover the original structure of the matrix if we
-    # keep hold of `*`.
+    # keep hold of `*`, and insert it again later.
 
     def remove!
       up.down = down
