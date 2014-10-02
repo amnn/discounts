@@ -200,15 +200,15 @@ class SparseMatrix
     # used to represent the data, but instead are there to aid in describing
     # the structure.
 
-    # A node is a sentinel column node (a `C` node) if its column pointer
+    # A node is a column sentinel node (a `C` node) if its column pointer
     # points to itself.
-    def sentinel_col?
+    def col_sentinel?
       equal? col
     end
 
-    # A node is a sentinel row node (an `R` node) if its row pointer points
+    # A node is a row sentinel node (an `R` node) if its row pointer points
     # to itself.
-    def sentinel_row?
+    def row_sentinel?
       equal? row
     end
 
@@ -218,7 +218,7 @@ class SparseMatrix
       r = self
       loop do
         r = r.down
-        break if r.sentinel_col?
+        break if r.col_sentinel?
         yield r
       end
     end
@@ -229,7 +229,7 @@ class SparseMatrix
       c = self
       loop do
         c = c.right
-        break if c.sentinel_row?
+        break if c.row_sentinel?
         yield c
       end
     end
