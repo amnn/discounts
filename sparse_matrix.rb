@@ -278,27 +278,54 @@ class SparseMatrix
     from.rows(&blk)
   end
 
+  # Returns an `Array` of *coverings* where a covering is an `Array` of rows.
+  #
+  # A *covering* has the property that none of the rows in it intersect. So,
+  # if there is an entry in a column `c` in a particular row in the covering,
+  # then no other row in the covering will have an entry in `c`.
+  #
+  # The algorithm being used here is a modification of the Exact Cover
+  # algorithm (specifically, Knuth's Algorithm X), designed to be more loosely
+  # constrained in that we are not looking for Exact covers: We are happy with
+  # partial covers also.
+  #
+  # http://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X
+
   def covering_rows(from = @head)
+    # If there are no more rows, the search space is empty, the only
+    # covering is the empty covering.
     return [[]] if from.last_row?
 
+    # Otherwise iterate through the remaining rows, and for each row:
     enum_for(:rows, from).flat_map do |row|
       removals = []
 
-      row.cols do |cell_x|
-        cell_x.col.rows do |cell_y|
-          r = cell_y.row
-          unless r.removed? || r.equal?(row)
-            removals.unshift r.remove!
-          end
-        end
+      row.cols do |cell_x|                    # For each entry in the row.
+        cell_x.col.rows do |cell_y|           # Find all the rows that also
+          r = cell_y.row                      # have an entry in this column.
+          unless r.removed? || r.equal?(row)  # And remove them, unless they
+            removals.unshift r.remove!        # have already been removed.
+          end                                 # (Or they are the row you are
+        end                                   # currently iterating over).
       end
 
+      # We must remove the row we are iterating over last, so that its up/down
+      # pointers get updated by all the previous removals. This is important,
+      # because we use its `down` pointer to find the next available row, when
+      # we recurse.
       removals.unshift row.remove!
 
+      # Recursively call our algorithm, to find all the coverings using rows
+      # below the current row (taking into account the rows we removed).
+      # Additionally, we add our row to each covering: We can do this because
+      # we know it will not conflict with any of the coverings returned,
+      # because we removed all conflicting rows above, before recursing.
       coverings =
         covering_rows(row)
           .map { |rs| rs << row.datum }
 
+      # Reinsert the removals, in reverse order of removal
+      # (Order is important). And return the coverings.
       removals.each(&:insert!)
       coverings
     end
