@@ -198,7 +198,7 @@ class SparseMatrix
 
     # the `H`, `C` and `R` nodes are *sentinel* nodes. This means they are not
     # used to represent the data, but instead are there to aid in describing
-    # the strucuture.
+    # the structure.
 
     # A node is a sentinel column node (a `C` node) if its column pointer
     # points to itself.
