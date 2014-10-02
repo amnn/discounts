@@ -1,17 +1,27 @@
 require 'set'
 require './discount'
 
+##### Models #####
 class OrderItem < Struct.new(:item_id, :name, :price)
   def to_s
     "Item[#{item_id}](#{name}, #{price})"
   end
 end
 
+=begin
+A Discount is an application of a Deal to a particular set of items found in
+an Order.
+=end
+
 class Discount < Struct.new(:name, :items, :savings)
   def to_s
     "Discount[#{name}](#{savings}) #{items.inspect}"
   end
 end
+
+=begin
+A Deal is applied to an order to get a list of discounts.
+=end
 
 class Deal
   @next_id = 0
