@@ -1,4 +1,53 @@
+=begin
+Implementation of the Sparse Matrix from Knuth's DLX algorithm (Dancing Links)
+http://en.wikipedia.org/wiki/Dancing_Links
+=end
+
 class SparseMatrix
+=begin
+  The Matrix consists of a grid of nodes, each has a left, right, top (up),
+  and bottom (down) neighbour, as well as a row and column it is associated
+  with.
+
+     H  -- C1 -- C2 -- C3 (-- H)
+     |     |     |     |
+     R1 -- *  ---+---- *  (-- R1)
+     |     |     |     |
+     R2 ---+---- *  (--+----- R2)
+     |     |     |     |
+     R3 -- *  ---+---- *  (-- R3)
+    (| )  (| )  (| )  (| )
+    (H )  (C1)  (C2)  (C3)
+
+  The diagram above describes the structure used to represent the matrix:
+
+    +-------+
+    | 1 0 1 |
+    | 0 1 0 |
+    | 1 0 1 |
+    +-------+
+
+  In the diagram `H` is the header node, `Rx` and `Cx` refer to row and column
+  nodes respectively. `--` and `|` are used to represent left-right and up-down
+  relationships between nodes. E.g. `x -- y` means:
+
+    x.left = y
+    y.right = x
+
+  Relationships in parentheses are used to denote a cyclic relationship. E.g.
+
+    C3 (-- H)
+
+  means that column node 3 wraps back round and connects to the header node.
+
+  Finally, `*` represents an internal node of the matrix (representing a `1`)
+  in the matrix. The `+` signs denote relationships crossing over each other
+  in the diagram (they are a feature of the diagram only, and not the actual
+  structure in memory).
+
+  This representation is used for boolean matrices only (the entries can only
+  be 1 or 0) and it only stores the entries which contain `1`'s.
+=end
   class Node < Struct.new(:datum,
                           :up, :down,
                           :left, :right,
