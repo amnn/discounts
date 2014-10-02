@@ -59,16 +59,6 @@ class SparseMatrix
 
   This representation is used for boolean matrices only (the entries can only
   be 1 or 0) and it only stores the entries which contain `1`'s.
-
-  To replicate the above structure using the class you can use the following
-  code:
-
-    SparseMatrix.new(1..3, 1..3) { |r,c| (r+c).even? }
-
-  This means that rows have elements 1 through to 3, and so do columns. Then,
-  the block is used to determine which entries should be 1. In this case,
-  if the sum of the row and column values is even, then we want that entry
-  to be a 1.
 =end
   class Node < Struct.new(:datum,
                           :up, :down,
@@ -245,6 +235,24 @@ class SparseMatrix
     end
   end
 
+  # Creates a new SparseMatrix instance.
+  # Takes an `Enumerable` of data for row elements, `rs`, and equivalently
+  # data for column elements, `cs` and then a 2-arity predicate block.
+  #
+  # It then builds an empty SparseMatrix with the appropriate rows and
+  # columns, and iterates through every possible element inside the matrix,
+  # passing its row and column to the block. If the block returns true,
+  # an entry is added at that position.
+  #
+  # To create the matrix described at the top of the file, we can do the
+  # following:
+
+  #   SparseMatrix.new(1..3, 1..3) { |r,c| (r+c).even? }
+
+  # This means that rows have elements 1 through to 3, and so do columns. Then,
+  # if the sum of the row and column values is even, we want that entry
+  # to be a 1.
+
   def initialize(rs, cs, &assoc)
     @head = Node.header
     @rows = build_axis(rs, @head, &Node.method(:empty_row))
@@ -261,6 +269,8 @@ class SparseMatrix
     end
   end
 
+  # Exposes the row iterator from the head node, or a provided node, as long
+  # as it belongs to this matrix.
   def rows(from = @head, &blk)
     unless from.head.equal? @head
       raise ArgumentError, "Row does not match matrix"
