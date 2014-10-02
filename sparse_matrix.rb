@@ -248,6 +248,9 @@ class SparseMatrix
   # following:
 
   #   SparseMatrix.new(1..3, 1..3) { |r,c| (r+c).even? }
+  #     => 1: 1, 3
+  #        2: 2
+  #        3: 1, 3
 
   # This means that rows have elements 1 through to 3, and so do columns. Then,
   # if the sum of the row and column values is even, we want that entry
