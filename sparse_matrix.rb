@@ -21,11 +21,12 @@ class SparseMatrix
 
   The diagram above describes the structure used to represent the matrix:
 
-    +-------+
-    | 1 0 1 |
-    | 0 1 0 |
-    | 1 0 1 |
-    +-------+
+     C 1 2 3
+   R +-------+
+   1 | 1 0 1 |
+   2 | 0 1 0 |
+   3 | 1 0 1 |
+     +-------+
 
   In the diagram `H` is the header node, `Rx` and `Cx` refer to row and column
   nodes respectively. `--` and `|` are used to represent left-right and up-down
@@ -47,6 +48,16 @@ class SparseMatrix
 
   This representation is used for boolean matrices only (the entries can only
   be 1 or 0) and it only stores the entries which contain `1`'s.
+
+  To replicate the above structure using the class you can use the following
+  code:
+
+    SparseMatrix.new(1..3, 1..3) { |r,c| (r+c).even? }
+
+  This means that rows have elements 1 through to 3, and so do columns. Then,
+  the block is used to determine which entries should be 1. In this case,
+  if the sum of the row and column values is even, then we want that entry
+  to be a 1.
 =end
   class Node < Struct.new(:datum,
                           :up, :down,
