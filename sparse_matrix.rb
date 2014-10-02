@@ -52,12 +52,30 @@ class SparseMatrix
                           :up, :down,
                           :left, :right,
                           :row, :col)
+    # Creates a brand-new header (H) node.
+    # All pointers in the node point to itself, as it represents a completely
+    # empty matrix with no rows or columns:
+    #
+    #   H (-- H)
+    #  (|)
+    #  (H)
+
     def self.header
       head = new
       head.left = head.right =
         head.up = head.down =
         head.row = head.col = head
     end
+
+    # Creates a new row (R) node, with `datum` as its datum element, `up` as
+    # the previous row node and `head` as the head node:
+    #
+    #   ⋮
+    #   up -- ⋯
+    #   |
+    #   R (-- R)
+    #  (|)
+    #  (H)
 
     def self.empty_row(datum, up, head)
       row = new(datum, up, head, nil, nil, nil, head)
@@ -66,6 +84,13 @@ class SparseMatrix
         row.left = row.right = row
     end
 
+    # Creates an empty column (C) node, with `datum` as its datum element,
+    # `left` as the previous column node and `head` as the head node:
+    #
+    #    ⋯ -- left -- C (-- H)
+    #           |    (|)
+    #           ⋮    (C)
+
     def self.empty_col(datum, left, head)
       col = new(datum, nil, nil, left, head, head, nil)
 
@@ -73,13 +98,52 @@ class SparseMatrix
         col.up = col.down = col
     end
 
+    # Creates an internal entry (*) node, with the given neighbours,
+    # row and column:
+    #
+    #           up
+    #           |
+    #   left -- * -- right
+    #           |
+    #           down
+    #
+    # Because entry nodes simply represent one, they do not use their
+    # `datum` field, it is just set to `nil`.
+
     def self.entry(up, down, left, right, row, col)
       new(nil, up, down, left, right, row, col)
     end
 
+    # Recovers the `head` node from any node in the matrix.
+    # The column node of the row node is the head.
+    # Equivalently the row node of the column node (`col.row`) is
+    # also the head.
+
     def head
       row.col
     end
+
+    # Removes this node from its vertical relationship. I.e. if originally,
+    # we have the following:
+    #
+    #   up
+    #   |
+    #   *
+    #   |
+    #   down
+    #
+    # Then, we change `up` to point to `down` and `down` to point to `up`. So
+    # that if we look at the structure from the point of view of `up` or `down`
+    # it looks like this:
+    #
+    #   up
+    #   |
+    #   down
+    #
+    # But from the point of view of `*`, it is still as it was before.
+    #
+    # This allows us to recover the original structure of the matrix if we
+    # keep hold of `*`.
 
     def remove!
       up.down = down
@@ -87,11 +151,14 @@ class SparseMatrix
       self
     end
 
+    # Joins the node back up to all of its neighbours (Doing the opposite of
+    # `remove!`).
     def insert!
       left.right = right.left =
         up.down = down.up = self
     end
 
+    # Checks whether the node has been inserted.
     def inserted?
       up.down.equal?(self) &&
         down.up.equal?(self) &&
@@ -99,40 +166,59 @@ class SparseMatrix
         right.left.equal?(self)
     end
 
+    # Checks whether the node has been removed.
     def removed?
       !inserted?
     end
 
+    # If this entry is in the last row, then if we try to go `down`, we will
+    # loop around and reach its column node, due to the cyclic linked list
+    # structure.
     def last_row?
       down.equal? col
     end
 
+    # If this entry is in the last column, then if we try to go `right`, we
+    # loop round and reach its row node, due to the cyclic linked list
+    # structure.
     def last_col?
       right.equal? row
     end
 
-    def sentinel_row?
+    # the `H`, `C` and `R` nodes are *sentinel* nodes. This means they are not
+    # used to represent the data, but instead are there to aid in describing
+    # the strucuture.
+
+    # A node is a sentinel column node (a `C` node) if its column pointer
+    # points to itself.
+    def sentinel_col?
       equal? col
     end
 
-    def sentinel_col?
+    # A node is a sentinel row node (an `R` node) if its row pointer points
+    # to itself.
+    def sentinel_row?
       equal? row
     end
 
+    # Iterate through each subsequent row from this one (not inclusive) to
+    # the last row (inclusive).
     def rows # yields #
       r = self
       loop do
         r = r.down
-        break if r.sentinel_row?
+        break if r.sentinel_col?
         yield r
       end
     end
 
+    # Iterate through each subsequence column from this one (not inclusive) to
+    # the last column (inclusive).
     def cols # yields #
       c = self
       loop do
         c = c.right
-        break if c.sentinel_col?
+        break if c.sentinel_row?
         yield c
       end
     end
