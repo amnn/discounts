@@ -20,7 +20,8 @@ class Discount < Struct.new(:name, :items, :savings)
 end
 
 =begin
-A Deal is applied to an order to get a list of discounts.
+A Deal is applied to an order to get a hash mapping sets of item ids to a
+discount.
 =end
 
 class Deal
@@ -37,36 +38,48 @@ class Deal
   end
 
   def apply(order)
-    @blk[name, order]
+    instance_exec(order, &@blk)
+  end
+
+  def discount(items, savings)
+    key = Set[*items.map(&:item_id)]
+    [key, Discount[@name, key, savings]]
   end
 end
 
 deals = [
-  Deal.new("20% off Food + Drink Combinations") do |name, order|
+  Deal.new("20% off Food + Drink Combinations") do |order|
     food_items, drink_items =
       %W(Food Drink).map do  |i|
         r = /#{i}/
         order.select { |oi| r =~ oi.name }
       end
 
-      food_items
+    Hash[
+      *food_items
         .product(drink_items)
-        .map do |deal|
-          Discount[
-            name, Set[*deal.map(&:item_id)],
-            (deal.map(&:price).reduce(&:+) * 0.2).to_i]
-        end
+        .map do |items|
+          discount(items, (items.reduce(0) { |s,i| s + i.price } * 0.2).to_i)
+        end.flatten]
   end,
 
-  Deal.new("2 for 1 drinks") do |name, order|
-    order
-      .select { |oi| /Drink/ =~ oi.name }
-      .combination(2)
-      .map do |drinks|
-        Discount[
-          name, Set[*drinks.map(&:item_id)],
-          drinks.map(&:price).min]
-      end
+  Deal.new("2 for 1 drinks, cheapest one free.") do |order|
+    Hash[
+      *order
+        .select { |oi| /Drink/ =~ oi.name }
+        .combination(2)
+        .map do |drinks|
+          discount(drinks, drinks.map(&:price).min)
+        end.flatten]
+  end,
+
+  Deal.new("2 for 1 anything, expensive one free.") do |order|
+    Hash[
+      *order
+        .combination(2)
+        .map do |items|
+          discount(items, items.map(&:price).max)
+        end.flatten]
   end]
 
 order = [

@@ -14,7 +14,11 @@ the item in the column.
 
 def deal_matrix(deals, order)
   SparseMatrix.new(
-    deals.flat_map { |d| d.apply(order) },
+    deals.each_with_object({}) do |d, h|
+      h.merge!(d.apply(order)) do |k, *ds|
+        ds.max_by(&:savings)
+      end
+    end.values,
     order) do |discount, item|
       discount.items.include? item.item_id
     end
