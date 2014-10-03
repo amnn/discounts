@@ -38,7 +38,7 @@ class Deal
   end
 
   def apply(order)
-    instance_exec(order, &@blk)
+    Hash[*instance_exec(order, &@blk).flatten]
   end
 
   def discount(items, savings)
@@ -55,31 +55,28 @@ deals = [
         order.select { |oi| r =~ oi.name }
       end
 
-    Hash[
-      *food_items
-        .product(drink_items)
-        .map do |items|
-          discount(items, (items.reduce(0) { |s,i| s + i.price } * 0.2).to_i)
-        end.flatten]
+    food_items
+      .product(drink_items)
+      .map do |items|
+        discount(items, (items.reduce(0) { |s,i| s + i.price } * 0.2).to_i)
+      end
   end,
 
   Deal.new("2 for 1 drinks, cheapest one free.") do |order|
-    Hash[
-      *order
-        .select { |oi| /Drink/ =~ oi.name }
-        .combination(2)
-        .map do |drinks|
-          discount(drinks, drinks.map(&:price).min)
-        end.flatten]
+    order
+      .select { |oi| /Drink/ =~ oi.name }
+      .combination(2)
+      .map do |drinks|
+        discount(drinks, drinks.map(&:price).min)
+      end
   end,
 
   Deal.new("2 for 1 anything, expensive one free.") do |order|
-    Hash[
-      *order
-        .combination(2)
-        .map do |items|
-          discount(items, items.map(&:price).max)
-        end.flatten]
+    order
+      .combination(2)
+      .map do |items|
+        discount(items, items.map(&:price).max)
+      end
   end]
 
 order = [
